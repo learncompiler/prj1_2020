@@ -1,9 +1,9 @@
-generator int f() {
-    int a = 1;
+generator int f(int m, int n) {
+    int a = m;
     yield a;
-    a = 22;
+    a = n;
     yield a;
-    int b = 333;
+    int b = m + a;
     yield b;
     return;
 }

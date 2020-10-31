@@ -156,6 +156,8 @@ class Node:
             return self.expr_r.to_cpp()
         if self.kind == NodeKind('ASSIGN'):
             return '(' + self.expr_l.to_cpp() + ') = (' + self.expr_r.to_cpp() + ');'
+        if self.kind == NodeKind('ADD') or self.kind == NodeKind('PTR_ADD'):
+            return '(' + self.expr_l.to_cpp() + ') + (' + self.expr_r.to_cpp() + ')'
         print('Node.to_cpp ERR: unknown node kind: `%s`' % self.kind)
         exit(-1)
 
@@ -272,15 +274,44 @@ class Function:
             exit(-1)
         global hot_func
         hot_func = self
-        gen_code_begin = '$generator( %s) {' % self.name
+        gen_code_begin = '$generator(%s) {' % self.name
+
+        # 函数体内变量
         gen_code_var = ''
-        gen_code_emit = '$emit(%s)' % self.ret_type.to_cpp()
-        gen_code_body = self.stmts.to_cpp()
         for arg in self.args:
             gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';'
+
+        # 构造函数参数
+        gen_code_construct = self.name + '('
+        gen_code_construct_list = ''
+        if len(self.args) != 0:
+            gen_code_construct += self.args[0].type_.to_cpp() + \
+                ' ' + self.args[0].name
+        gen_code_construct_list += self.args[0].name + \
+            '(' + self.args[0].name + ')'
+        self.args.pop(0)
+        while len(self.args) > 0:
+            gen_code_construct += ',' + \
+                self.args[0].type_.to_cpp() + ' ' + self.args[0].name
+            gen_code_construct_list += ',' + self.args[0].name + \
+                '(' + self.args[0].name + ')'
+            self.args.pop(0)
+        gen_code_construct += ')'
+        if gen_code_construct_list != '':
+            gen_code_construct += ':' + gen_code_construct_list
+        gen_code_construct += '{}'
+        self.args = []
+
+        gen_code_emit = '$emit(%s)' % self.ret_type.to_cpp()
+
+        gen_code_body = self.stmts.to_cpp()
+
+        for arg in self.args:
+            gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';'
+
         gen_code_end = '$stop};'
 
-        gen_code = gen_code_begin + gen_code_var + \
+        gen_code = gen_code_begin + gen_code_var + gen_code_construct + \
             gen_code_emit + gen_code_body + gen_code_end
         return gen_code
 
