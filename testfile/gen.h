@@ -1,6 +1,9 @@
 generator int f() {
-    yield 1;
-    yield 22;
-    yield 333;
+    int a = 1;
+    yield a;
+    a = 22;
+    yield a;
+    int b = 333;
+    yield b;
     return;
 }

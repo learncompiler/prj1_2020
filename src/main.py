@@ -53,7 +53,9 @@ def main(argv):
         return 0
     prog = parsing(token_list)
     s = prog.to_cpp()
+    # print(s)
     open(args.outfile, 'w').write(s)
+
     # if args.parse:
     #     print(prog)
     #     return 0

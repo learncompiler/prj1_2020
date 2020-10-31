@@ -142,7 +142,21 @@ class Node:
             return s
         if self.kind == NodeKind('NUM'):
             return str(self.val)
-        print('PARSE `to_cpp` ERR: unknown node kind: `%s`' % self.kind)
+        if self.kind == NodeKind('DECL'):
+            global hot_func
+            hot_func.args.append(self.var)
+            s = self.var.name
+            if self.var.init != None:
+                s += ' = (' + self.var.init.to_cpp() + ')'
+            s += ';'
+            return s
+        if self.kind == NodeKind('VAR'):
+            return self.var.name
+        if self.kind == NodeKind('EXPR'):
+            return self.expr_r.to_cpp()
+        if self.kind == NodeKind('ASSIGN'):
+            return '(' + self.expr_l.to_cpp() + ') = (' + self.expr_r.to_cpp() + ');'
+        print('Node.to_cpp ERR: unknown node kind: `%s`' % self.kind)
         exit(-1)
 
     def __str__(self):
@@ -256,7 +270,19 @@ class Function:
             print('todo: Funtion.to_cpp()')
             print('todo: $return')
             exit(-1)
-        return '$generator(%s) {$emit(%s) %s $stop};' % (self.name, self.ret_type.to_cpp(), self.stmts.to_cpp())
+        global hot_func
+        hot_func = self
+        gen_code_begin = '$generator( %s) {' % self.name
+        gen_code_var = ''
+        gen_code_emit = '$emit(%s)' % self.ret_type.to_cpp()
+        gen_code_body = self.stmts.to_cpp()
+        for arg in self.args:
+            gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';'
+        gen_code_end = '$stop};'
+
+        gen_code = gen_code_begin + gen_code_var + \
+            gen_code_emit + gen_code_body + gen_code_end
+        return gen_code
 
     def __str__(self):
         s = 'func_decl ' + self.name + '('
