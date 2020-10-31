@@ -55,13 +55,3 @@ def main(argv):
     s = prog.to_cpp()
     # print(s)
     open(args.outfile, 'w').write(s)
-
-    # if args.parse:
-    #     print(prog)
-    #     return 0
-    # ir = gen_ir(prog)
-    # if args.ir:
-    #     print_ir(ir)
-    #     return 0
-    # asm = ir2asm(ir)
-    # # print(asm)

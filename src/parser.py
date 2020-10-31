@@ -1,4 +1,3 @@
-from __future__ import annotations
 from enum import Enum
 from .lex import TokenKind, Token
 
@@ -131,13 +130,13 @@ class Node:
 
     def to_cpp(self):
         if self.kind == NodeKind('RETURN'):
-            return '$return;'
+            return '$return'
         if self.kind == NodeKind('YIELD'):
-            return '$yield (' + self.expr_r.to_cpp() + ');\n'
+            return '$yield (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('BLOCK'):
             s = '{'
             for item in self.body:
-                s += item.to_cpp()
+                s += item.to_cpp() + ';\n'
             s += '}'
             return s
         if self.kind == NodeKind('NUM'):
@@ -148,16 +147,25 @@ class Node:
             s = self.var.name
             if self.var.init != None:
                 s += ' = (' + self.var.init.to_cpp() + ')'
-            s += ';'
+            # s += ';'
             return s
         if self.kind == NodeKind('VAR'):
             return self.var.name
         if self.kind == NodeKind('EXPR'):
             return self.expr_r.to_cpp()
         if self.kind == NodeKind('ASSIGN'):
-            return '(' + self.expr_l.to_cpp() + ') = (' + self.expr_r.to_cpp() + ');'
+            return '(' + self.expr_l.to_cpp() + ') = (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('ADD') or self.kind == NodeKind('PTR_ADD'):
             return '(' + self.expr_l.to_cpp() + ') + (' + self.expr_r.to_cpp() + ')'
+        if self.kind == NodeKind('FOR'):
+            s = 'for(' + self.pre.to_cpp() + ';' + \
+                self.cond.to_cpp() + ';' + self.post.to_cpp() + ')'
+            s += self.then.to_cpp()
+            return s
+        if self.kind == NodeKind('LT'):
+            return '(' + self.expr_l.to_cpp() + ') < (' + self.expr_r.to_cpp() + ')'
+        if self.kind == NodeKind('SUB') or self.kind == NodeKind('PTR_SUB') or self.kind == NodeKind('PTR_DIFF'):
+            return '(' + self.expr_l.to_cpp() + ') - (' + self.expr_r.to_cpp() + ')'
         print('Node.to_cpp ERR: unknown node kind: `%s`' % self.kind)
         exit(-1)
 
@@ -274,15 +282,15 @@ class Function:
             exit(-1)
         global hot_func
         hot_func = self
-        gen_code_begin = '$generator(%s) {' % self.name
+        gen_code_begin = '$generator(%s) {\n' % self.name
 
-        # 函数体内变量
+        # 函数参数变量
         gen_code_var = ''
         for arg in self.args:
-            gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';'
+            gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';\n'
 
         # 构造函数参数
-        gen_code_construct = self.name + '('
+        gen_code_construct = '\n' + self.name + '('
         gen_code_construct_list = ''
         if len(self.args) != 0:
             gen_code_construct += self.args[0].type_.to_cpp() + \
@@ -299,15 +307,16 @@ class Function:
         gen_code_construct += ')'
         if gen_code_construct_list != '':
             gen_code_construct += ':' + gen_code_construct_list
-        gen_code_construct += '{}'
+        gen_code_construct += '{}\n\n'
         self.args = []
 
         gen_code_emit = '$emit(%s)' % self.ret_type.to_cpp()
 
         gen_code_body = self.stmts.to_cpp()
 
+        # 函数体内变量
         for arg in self.args:
-            gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';'
+            gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';\n'
 
         gen_code_end = '$stop};'
 
@@ -333,7 +342,7 @@ class Program:
         self.global_vars = global_vars
 
     def to_cpp(self):
-        s = '#include \"generator.h\"\n'
+        s = '#include \"generator.h\"\n\n'
         for func in self.funcs:
             s += func.to_cpp() + '\n'
         return s
@@ -526,9 +535,8 @@ def new_cast(origin, type_):
         node.var = Var(origin.var.name, None, None, None, None, None, None)
     return node
 
+
 # 对应同名非终结符
-
-
 def postfix():
     node = primary()
     if node != None and (node.type_.kind == TypeKind('ARR') or (node.type_.kind == TypeKind('PTR') and expect_reserved('['))):
