@@ -17,10 +17,13 @@
 
 ## TODO
 
-1. 阅读 rust async 相关源码。
-2. 进一步优化 rustc 。
+1. 继续阅读 rust async 相关源码。
+2. cpp generator 内存优化。
+3. cpp 支持 async 语法。
+4. 进一步优化 rustc 。
 
-> 以下任务打算咕了：
->
-> 1. 内存优化。
-> 2. 支持 async 语法。
+## Log
+
+### 2020-11-07
+
+https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-11-02.md
