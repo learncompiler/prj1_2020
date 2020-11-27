@@ -92,6 +92,7 @@ class NodeKind(Enum):
     PTR_ADD = 'PTR_ADD'  # ptr + num
     PTR_SUB = 'PTR_SUB'  # ptr - num
     PTR_DIFF = 'PTR_DIFF'  # ptr - ptr
+    AWAIT = 'AWAIT'
 
 
 class Var:
@@ -166,6 +167,18 @@ class Node:
             return '(' + self.expr_l.to_cpp() + ') < (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('SUB') or self.kind == NodeKind('PTR_SUB') or self.kind == NodeKind('PTR_DIFF'):
             return '(' + self.expr_l.to_cpp() + ') - (' + self.expr_r.to_cpp() + ')'
+        if self.kind == NodeKind('FUNC_CALL'):
+            s = self.func_call.name + '('
+            if len(self.func_call.args) > 0:
+                s += str(self.func_call.args[0])
+            if len(self.func_call.args) > 1:
+                for i in range(1, len(self.func_call.args)):
+                    s += ',' + str(self.func_call.args[i])
+            s += ')'
+            return s
+        if self.kind == NodeKind('AWAIT'):
+            return 'Future<%s, %s>(%s).await()' % (
+                self.expr_r.func_call.name, self.expr_r.type_.to_cpp(), self.expr_r.to_cpp())
         print('Node.to_cpp ERR: unknown node kind: `%s`' % self.kind)
         exit(-1)
 
@@ -295,9 +308,9 @@ class Function:
         if len(self.args) != 0:
             gen_code_construct += self.args[0].type_.to_cpp() + \
                 ' ' + self.args[0].name
-        gen_code_construct_list += self.args[0].name + \
-            '(' + self.args[0].name + ')'
-        self.args.pop(0)
+            gen_code_construct_list += self.args[0].name + \
+                '(' + self.args[0].name + ')'
+            self.args.pop(0)
         while len(self.args) > 0:
             gen_code_construct += ',' + \
                 self.args[0].type_.to_cpp() + ' ' + self.args[0].name
@@ -342,7 +355,7 @@ class Program:
         self.global_vars = global_vars
 
     def to_cpp(self):
-        s = '#include \"generator.h\"\n\n'
+        s = '#include \"future.h\"\n\n'
         for func in self.funcs:
             s += func.to_cpp() + '\n'
         return s
@@ -585,6 +598,12 @@ def unary():
             node = new_cast(unary(), type_)
             return node
         checkout_token()
+    token = parse_reserved('await')
+    if token != None:
+        assert(parse_reserved('(') != None)
+        node = primary()
+        assert (parse_reserved(')') != None)
+        return(new_unary(NodeKind('AWAIT'), node))
     return postfix()
 
 
@@ -1054,7 +1073,8 @@ def parsing(token_list_):
     next_token()
     prog = Program([], [])
     while len(token_list) > 0:
-        is_gen = (parse_reserved('generator') != None)
+        is_gen = (parse_reserved('generator') != None) or (
+            parse_reserved('async') != None)
         type_ = get_type()
         assert (type_ != None)
         name = parse_ident()[1]

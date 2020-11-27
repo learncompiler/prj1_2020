@@ -26,7 +26,7 @@ def is_space(c):
 
 def read_reserved(code: str, index: int):
     keyworks = ['return', 'int', 'if', 'else',
-                'for', 'while', 'do', 'break', 'continue', 'yield', 'async', 'poll', 'generator', 'Future']
+                'for', 'while', 'do', 'break', 'continue', 'yield', 'async', 'poll', 'generator', 'Future', 'await']
     for kw in keyworks:
         if code.startswith(kw, index) and not code[index + len(kw)].isalnum():
             return kw

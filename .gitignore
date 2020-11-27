@@ -3,3 +3,7 @@ __pycache__
 temp.cpp
 *.out
 gen_out.h
+target
+Cargo.lock
+testfile/future.h
+testfile/generator.h

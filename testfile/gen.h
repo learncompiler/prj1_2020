@@ -1,13 +1,9 @@
-generator int f(int m, int n) {
-    int a = m;
+async int f2() {
+    yield 233;
+    yield 2333;
+}
+
+async int f1() {
+    int a = await(f2());
     yield a;
-    a = n;
-    yield a;
-    int b = a = m - a;
-    yield b;
-    for (int i = 0; i < 2; i = i + 1) {
-        yield i;
-        yield i;
-    }
-    return;
 }
