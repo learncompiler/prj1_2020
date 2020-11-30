@@ -130,8 +130,9 @@ class Node:
         self.arr_index = arr_index
 
     def to_cpp(self):
+        global hot_func
         if self.kind == NodeKind('RETURN'):
-            return '$return'
+            return '$return (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('YIELD'):
             return '$yield (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('BLOCK'):
@@ -143,19 +144,31 @@ class Node:
         if self.kind == NodeKind('NUM'):
             return str(self.val)
         if self.kind == NodeKind('DECL'):
-            global hot_func
             hot_func.args.append(self.var)
             s = self.var.name
             if self.var.init != None:
                 s += ' = (' + self.var.init.to_cpp() + ')'
-            # s += ';'
             return s
         if self.kind == NodeKind('VAR'):
             return self.var.name
         if self.kind == NodeKind('EXPR'):
             return self.expr_r.to_cpp()
         if self.kind == NodeKind('ASSIGN'):
-            return '(' + self.expr_l.to_cpp() + ') = (' + self.expr_r.to_cpp() + ')'
+            if self.expr_r.kind == NodeKind('AWAIT'):
+                import time
+                now = time.time() * 1000000 % 100000000000000
+                await_func = self.expr_r.expr_r
+                fu_name = '__%s__%d' % (await_func.func_call.name, now)
+                ret_name = '__ret__%d' % now
+                hot_func.args.append(Var(fu_name, None, await_func.to_cpp(), None, True, None, 'Future<%s, %s>' % (
+                    await_func.func_call.name, await_func.type_.to_cpp())))
+                hot_func.args.append(
+                    Var(ret_name, None, str(0), None, True, None, await_func.type_))
+                s = 'while (%s.poll(%s)) {$yield(%s);}\n' % (
+                    fu_name, ret_name, ret_name)
+                return s + '(' + self.expr_l.to_cpp() + ') = ' + ret_name
+            else:
+                return '(' + self.expr_l.to_cpp() + ') = (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('ADD') or self.kind == NodeKind('PTR_ADD'):
             return '(' + self.expr_l.to_cpp() + ') + (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('FOR'):
@@ -176,9 +189,6 @@ class Node:
                     s += ',' + str(self.func_call.args[i])
             s += ')'
             return s
-        if self.kind == NodeKind('AWAIT'):
-            return 'Future<%s, %s>(%s).await()' % (
-                self.expr_r.func_call.name, self.expr_r.type_.to_cpp(), self.expr_r.to_cpp())
         print('Node.to_cpp ERR: unknown node kind: `%s`' % self.kind)
         exit(-1)
 
@@ -320,7 +330,6 @@ class Function:
         gen_code_construct += ')'
         if gen_code_construct_list != '':
             gen_code_construct += ':' + gen_code_construct_list
-        gen_code_construct += '{}\n\n'
         self.args = []
 
         gen_code_emit = '$emit(%s)' % self.ret_type.to_cpp()
@@ -329,10 +338,24 @@ class Function:
 
         # 函数体内变量
         for arg in self.args:
-            gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';\n'
+            if type(arg.type_) == str:
+                type_ = arg.type_
+            else:
+                type_ = arg.type_.to_cpp()
+            gen_code_var += type_ + ' ' + arg.name + ';\n'
 
         gen_code_end = '$stop};'
 
+        self.args = [arg for arg in self.args if arg.is_arg]
+        if (len(self.args) != 0):
+            if gen_code_construct_list == '':
+                gen_code_construct += ' : '
+            else:
+                gen_code_construct += ', '
+            for arg in self.args:
+                gen_code_construct += arg.name + '(' + arg.init + '), '
+            gen_code_construct = gen_code_construct[0: -2]
+        gen_code_construct += '{}\n\n'
         gen_code = gen_code_begin + gen_code_var + gen_code_construct + \
             gen_code_emit + gen_code_body + gen_code_end
         return gen_code
@@ -855,10 +878,7 @@ def stmt():
     if (token != None):
         node = new_stmt(NodeKind('RETURN'), expr())
         assert(parse_reserved(';'))
-        if hot_func.is_gen:
-            assert(node.expr_r == None)
-        else:
-            assert(hot_func.ret_type == node.expr_r.type_)
+        assert(hot_func.ret_type == node.expr_r.type_)
         return node
 
     # IF statement

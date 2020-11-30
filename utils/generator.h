@@ -22,8 +22,9 @@ class _generator {
     return false; \
     }
 
-#define $return \
-    _line = 0;  \
+#define $return(V) \
+    _line = 0;     \
+    _rv = (V);     \
     return false
 
 #define $yield(V)         \
