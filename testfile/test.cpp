@@ -2,7 +2,8 @@
 #include "gen_out.h"
 
 int main() {
-    Future<f1, int> fu((f1()));
+    f1 tmp;
+    Future<int> fu(&tmp);
     int a;
     while (fu.poll(a)) {
         printf("fu poll number is: %d\n", a);

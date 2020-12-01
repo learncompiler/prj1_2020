@@ -1,17 +1,20 @@
 #ifndef __generator_h__
 #define __generator_h__
 
+template <class T>
 class _generator {
    protected:
     int _line;
 
    public:
     _generator() : _line(0) {}
+    virtual bool next(T& V) = 0;
 };
 
-#define $generator(NAME) struct NAME : public _generator
+#define $generator(NAME, T) struct NAME : public _generator<T>
 
 #define $emit(T)         \
+   public:               \
     bool next(T& _rv) {  \
         switch (_line) { \
             case 0:;

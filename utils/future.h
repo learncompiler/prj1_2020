@@ -3,15 +3,16 @@
 
 #include "generator.h"
 
-template <class T1, class T2>
+template <class T>
 class Future {
    private:
-    T1 gen;
+    _generator<T>* gen;
 
    public:
-    bool poll(T2& a) { return gen.next(a); }
+    bool poll(T& a) { return gen->next(a); }
 
-    Future(T1 gen_) : gen(gen_) {}
+    Future(_generator<T>* gen_) : gen(gen_) {}
+    // ~Future() { delete gen; }
 };
 
 #endif

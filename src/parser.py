@@ -158,10 +158,13 @@ class Node:
                 import time
                 now = time.time() * 1000000 % 100000000000000
                 await_func = self.expr_r.expr_r
-                fu_name = '__%s__%d' % (await_func.func_call.name, now)
-                ret_name = '__ret__%d' % now
-                hot_func.args.append(Var(fu_name, None, await_func.to_cpp(), None, True, None, 'Future<%s, %s>' % (
-                    await_func.func_call.name, await_func.type_.to_cpp())))
+                fu_name = '__%s_fu__%d' % (await_func.func_call.name, now)
+                ret_name = '__%s_ret__%d' % (await_func.func_call.name, now)
+                gen_name = '__%s_gen__%d' % (await_func.func_call.name, now)
+                hot_func.args.append(
+                    Var(gen_name, None, '', None, True, None, await_func.func_call.name))
+                hot_func.args.append(Var(fu_name, None, '&%s' % gen_name, None,
+                                         True, None, 'Future<%s>' % (await_func.type_.to_cpp())))
                 hot_func.args.append(
                     Var(ret_name, None, str(0), None, True, None, await_func.type_))
                 s = 'while (%s.poll(%s)) {$yield(%s);}\n' % (
@@ -305,7 +308,8 @@ class Function:
             exit(-1)
         global hot_func
         hot_func = self
-        gen_code_begin = '$generator(%s) {\n' % self.name
+        gen_code_begin = '$generator(%s, %s) {\n' % (
+            self.name, self.ret_type.to_cpp())
 
         # 函数参数变量
         gen_code_var = ''
@@ -378,7 +382,7 @@ class Program:
         self.global_vars = global_vars
 
     def to_cpp(self):
-        s = '#include \"future.h\"\n\n'
+        s = '#include \"executor.h\"\n\n'
         for func in self.funcs:
             s += func.to_cpp() + '\n'
         return s
