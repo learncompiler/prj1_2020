@@ -1,13 +1,19 @@
-async int f2() {
-    yield 233;
-    yield 2333;
-    return 123;
+async int learn_song() {
+    return 111;
 }
 
-async int f1() {
-    int b = 1;
-    int a;
-    a = await(f2());
-    yield a;
-    return 333;
+async int sing_song() {
+    return 112;
+}
+
+async int learn_and_sing() {
+    int song;
+    song = await(learn_song());
+    int sing;
+    sing = await(sing_song());
+    return sing + song;
+}
+
+async int dance() {
+    return 113;
 }

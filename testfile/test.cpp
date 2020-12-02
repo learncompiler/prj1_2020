@@ -2,11 +2,14 @@
 #include "gen_out.h"
 
 int main() {
-    f1 tmp;
-    Future<int> fu(&tmp);
-    int a;
-    while (fu.poll(a)) {
-        printf("fu poll number is: %d\n", a);
-    }
+    learn_and_sing tmp1;
+    Future<int> fu1(&tmp1);
+    dance tmp2;
+    Future<int> fu2(&tmp2);
+
+    Executor<int> exec;
+    exec.spawn(fu1);
+    exec.spawn(fu2);
+    exec.run();
     return 0;
 }

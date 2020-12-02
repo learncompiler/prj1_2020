@@ -112,6 +112,17 @@ class FuncCall:
         self.args = args
 
 
+def arg2str(args):
+    if len(args) == 0:
+        return ''
+    else:
+        s = ''
+        for arg in args:
+            s += arg.var.name + ', '
+        s = s[:-2]
+        return s
+
+
 class Node:
     def __init__(self, kind=None, expr_l=None, expr_r=None, val=None, var=None, cond=None, then=None, else_=None, body=None, pre=None, post=None, func_call=None, type_=None, arr_index=None):
         self.kind = kind
@@ -162,12 +173,15 @@ class Node:
                 ret_name = '__%s_ret__%d' % (await_func.func_call.name, now)
                 gen_name = '__%s_gen__%d' % (await_func.func_call.name, now)
                 hot_func.args.append(
-                    Var(gen_name, None, '', None, True, None, await_func.func_call.name))
+                    Var(gen_name, None, arg2str(await_func.func_call.args), None, True, None, await_func.func_call.name))
                 hot_func.args.append(Var(fu_name, None, '&%s' % gen_name, None,
                                          True, None, 'Future<%s>' % (await_func.type_.to_cpp())))
                 hot_func.args.append(
                     Var(ret_name, None, str(0), None, True, None, await_func.type_))
-                s = 'while (%s.poll(%s)) {$yield(%s);}\n' % (
+                s = 'get_executor()->spawn(%s);\n' % fu_name
+                s += '$yield(%s)\n;' % ret_name
+                # s += '%s.poll(%s);\n' % (fu_name, ret_name)
+                s += 'while (%s.poll(%s)) {$yield(%s);}\n' % (
                     fu_name, ret_name, ret_name)
                 return s + '(' + self.expr_l.to_cpp() + ') = ' + ret_name
             else:
@@ -192,6 +206,8 @@ class Node:
                     s += ',' + str(self.func_call.args[i])
             s += ')'
             return s
+        if self.kind == NodeKind('MUL'):
+            return '(' + self.expr_l.to_cpp() + ') * (' + self.expr_r.to_cpp() + ')'
         print('Node.to_cpp ERR: unknown node kind: `%s`' % self.kind)
         exit(-1)
 

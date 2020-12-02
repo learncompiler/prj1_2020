@@ -12,7 +12,15 @@ class Future {
     bool poll(T& a) { return gen->next(a); }
 
     Future(_generator<T>* gen_) : gen(gen_) {}
-    // ~Future() { delete gen; }
+
+    Executor<T>* get_executor() { return gen->get_executor(); }
+
+    void set_executor(Executor<T>* executor) { gen->set_executor(executor); }
+
+    ~Future() {
+        // don't delete gen
+        // delete gen;
+    }
 };
 
 #endif
