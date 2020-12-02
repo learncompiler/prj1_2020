@@ -118,7 +118,7 @@ def arg2str(args):
     else:
         s = ''
         for arg in args:
-            s += arg.var.name + ', '
+            s += arg.to_cpp() + ', '
         s = s[:-2]
         return s
 
@@ -172,13 +172,23 @@ class Node:
                 fu_name = '__%s_fu__%d' % (await_func.func_call.name, now)
                 ret_name = '__%s_ret__%d' % (await_func.func_call.name, now)
                 gen_name = '__%s_gen__%d' % (await_func.func_call.name, now)
+                gen = find_func(await_func.func_call.name)
+                init_0 = ''
+                if len(gen.origin_args) > 0:
+                    init_0 = ('0, ' * len(gen.origin_args))[0: -2]
                 hot_func.args.append(
-                    Var(gen_name, None, arg2str(await_func.func_call.args), None, True, None, await_func.func_call.name))
+                    Var(gen_name, None, init_0, None, True, None, await_func.func_call.name))
                 hot_func.args.append(Var(fu_name, None, '&%s' % gen_name, None,
                                          True, None, 'Future<%s>' % (await_func.type_.to_cpp())))
                 hot_func.args.append(
                     Var(ret_name, None, str(0), None, True, None, await_func.type_))
-                s = 'get_executor()->spawn(%s);\n' % fu_name
+                s = ''
+
+                for i, arg in enumerate(await_func.func_call.args):
+                    s += '%s.%s = %s;\n' % (gen_name,
+                                            gen.origin_args[i].name, arg.to_cpp())
+
+                s += 'get_executor()->spawn(%s);\n' % fu_name
                 s += '$yield(%s)\n;' % ret_name
                 # s += '%s.poll(%s);\n' % (fu_name, ret_name)
                 s += 'while (%s.poll(%s)) {$yield(%s);}\n' % (
@@ -316,6 +326,7 @@ class Function:
         self.is_complete = is_complete
         self.ret_type = ret_type
         self.is_gen = is_gen
+        self.origin_args = list(args)
 
     def to_cpp(self):
         if not self.is_gen:
