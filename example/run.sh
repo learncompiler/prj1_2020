@@ -7,4 +7,4 @@ cp ../utils/generator.h $dir/generator.h
 cp ../utils/future.h $dir/future.h
 cp ../utils/executor.h $dir/executor.h
 g++ $dir/main.cpp -o $dir/main.out -std=c++11
-./$dir/main.out
+taskset -c 0 ./$dir/main.out
