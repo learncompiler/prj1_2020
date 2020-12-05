@@ -22,6 +22,8 @@ class _generator {
     Executor<T>* get_executor() { return executor; }
 
     void set_executor(Executor<T>* executor_) { executor = executor_; }
+
+    void reset() { _line = 0; }
 };
 
 #define $generator(NAME, T) struct NAME : public _generator<T>

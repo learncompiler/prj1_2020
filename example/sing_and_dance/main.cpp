@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "gen_out.h"
+#include "sing_and_dance_out.h"
 
 int main() {
     learn_and_sing tmp1;
@@ -10,6 +10,6 @@ int main() {
     Executor<int> exec;
     exec.spawn(fu1);
     exec.spawn(fu2);
-    exec.run();
+    exec.run(true);
     return 0;
 }

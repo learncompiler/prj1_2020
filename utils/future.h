@@ -11,11 +11,17 @@ class Future {
    public:
     bool poll(T& a) { return gen->next(a); }
 
+    Future() {}
+
     Future(_generator<T>* gen_) : gen(gen_) {}
+
+    void init(_generator<T>* gen_) { gen = gen_; }
 
     Executor<T>* get_executor() { return gen->get_executor(); }
 
     void set_executor(Executor<T>* executor) { gen->set_executor(executor); }
+
+    void reset() { gen->reset(); }
 
     ~Future() {
         // don't delete gen

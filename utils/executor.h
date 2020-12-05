@@ -42,6 +42,7 @@ class Executor {
     Executor() : current_task(nullptr) {}
 
     void spawn(Future<T> fu_) {
+        fu_.reset();
         fu_.set_executor(this);
         if (current_task == nullptr) {
             // executor is initing, not runing
@@ -55,7 +56,7 @@ class Executor {
         }
     }
 
-    void run() {
+    void run(bool log) {
         while (tasks.size() > 0) {
             current_task = tasks.front();
             tasks.pop_front();
@@ -68,8 +69,10 @@ class Executor {
                 current_task->set_sleep();
                 tasks.push_back(current_task);
             } else {
-                cout << "future run to the end" << endl;
-                cout << "ret val is: " << a << endl;
+                if (log) {
+                    cout << "future run to the end" << endl;
+                    cout << "ret val is: " << a << endl;
+                }
                 current_task->wake_other();
                 delete current_task;
             }

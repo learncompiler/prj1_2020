@@ -23,6 +23,8 @@ class Type():
     def to_cpp(self):
         if self.kind == TypeKind('INT'):
             return 'int'
+        if self.kind == TypeKind('PTR'):
+            return self.base.to_cpp() + '*'
         print('Type.cpp ERR: unknow TypeKind: %s' % self.kind)
         exit(-1)
 
@@ -218,6 +220,19 @@ class Node:
             return s
         if self.kind == NodeKind('MUL'):
             return '(' + self.expr_l.to_cpp() + ') * (' + self.expr_r.to_cpp() + ')'
+        if self.kind == NodeKind('IF'):
+            s = 'if (' + self.cond.to_cpp() + ') '
+            s += '{' + self.then.to_cpp() + '}'
+            if self.else_ != None:
+                s += ' else {' + self.else_.to_cpp() + '}'
+            return s
+        if self.kind == NodeKind('ARR_INDEX') or self.kind == NodeKind('PTR_INDEX'):
+            s = self.expr_r.to_cpp()
+            for ind in self.arr_index:
+                s += '[%s]' % ind.to_cpp()
+            return s
+        if self.kind == NodeKind('DEREF'):
+            return '*' + self.expr_r.to_cpp()
         print('Node.to_cpp ERR: unknown node kind: `%s`' % self.kind)
         exit(-1)
 
@@ -344,23 +359,30 @@ class Function:
             gen_code_var += arg.type_.to_cpp() + ' ' + arg.name + ';\n'
 
         # 构造函数参数
-        gen_code_construct = '\n' + self.name + '('
+        gen_code_construct_head = '('
         gen_code_construct_list = ''
         if len(self.args) != 0:
-            gen_code_construct += self.args[0].type_.to_cpp() + \
+            gen_code_construct_head += self.args[0].type_.to_cpp() + \
                 ' ' + self.args[0].name
             gen_code_construct_list += self.args[0].name + \
                 '(' + self.args[0].name + ')'
             self.args.pop(0)
         while len(self.args) > 0:
-            gen_code_construct += ',' + \
+            gen_code_construct_head += ',' + \
                 self.args[0].type_.to_cpp() + ' ' + self.args[0].name
             gen_code_construct_list += ',' + self.args[0].name + \
                 '(' + self.args[0].name + ')'
             self.args.pop(0)
-        gen_code_construct += ')'
+        gen_code_construct_head += ')'
+        gen_code_construct = self.name + gen_code_construct_head
         if gen_code_construct_list != '':
             gen_code_construct += ':' + gen_code_construct_list
+
+        gen_code_init = '\nvoid init' + gen_code_construct_head + '{'
+        for arg in self.origin_args:
+            gen_code_init += 'this->%s = %s;\n' % (arg.name, arg.name)
+        gen_code_init += '}\n'
+
         self.args = []
 
         gen_code_emit = '$emit(%s)' % self.ret_type.to_cpp()
@@ -377,17 +399,26 @@ class Function:
 
         gen_code_end = '$stop};'
 
+        gen_code_default_construct = self.name + '()'
+
         self.args = [arg for arg in self.args if arg.is_arg]
         if (len(self.args) != 0):
+            gen_code_default_construct += ' : '
             if gen_code_construct_list == '':
                 gen_code_construct += ' : '
             else:
                 gen_code_construct += ', '
             for arg in self.args:
+                gen_code_default_construct += arg.name + '(' + arg.init + '), '
                 gen_code_construct += arg.name + '(' + arg.init + '), '
-            gen_code_construct = gen_code_construct[0: -2]
-        gen_code_construct += '{}\n\n'
-        gen_code = gen_code_begin + gen_code_var + gen_code_construct + \
+            gen_code_construct = gen_code_construct[0:-2]
+            gen_code_default_construct = gen_code_default_construct[0: -2]
+        gen_code_construct += '{}\n'
+        gen_code_default_construct += '{}\n'
+
+        if gen_code_default_construct == gen_code_construct:
+            gen_code_default_construct = ''
+        gen_code = gen_code_begin + gen_code_var + gen_code_construct + gen_code_default_construct + gen_code_init +\
             gen_code_emit + gen_code_body + gen_code_end
         return gen_code
 
@@ -689,7 +720,7 @@ def multiplicative():
     return node
 
 
-def new_add(expr_l,  expr_r, op):
+def new_add(expr_l, expr_r, op):
     if expr_l.type_.kind == TypeKind('INT') and expr_r.type_.kind == TypeKind('INT'):
         return Node(kind=NodeKind(op), expr_l=expr_l, expr_r=expr_r, type_=Type(kind=TypeKind('INT')))
     if (expr_l.type_.kind == TypeKind('PTR') and expr_r.type_.kind == TypeKind('INT')):
