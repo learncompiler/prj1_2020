@@ -83,4 +83,13 @@ class Executor {
     }
 };
 
+template <class T>
+void block_on(Future<T> fu) {
+    T ret;
+    Poll state = Poll::PendingAndDontSleep;
+    while (state != Poll::Ready) {
+        state = fu.poll(ret);
+    }
+}
+
 #endif
