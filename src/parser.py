@@ -190,10 +190,11 @@ class Node:
                     s += '%s.%s = %s;\n' % (gen_name,
                                             gen.origin_args[i].name, arg.to_cpp())
 
-                s += 'get_executor()->spawn(%s);\n' % fu_name
-                s += '$yield(%s, true)\n;' % ret_name
+                # s += 'get_executor()->spawn(%s);\n' % fu_name
+                # s += '$yield(%s, true)\n;' % ret_name
                 # s += '%s.poll(%s);\n' % (fu_name, ret_name)
-                s += 'while (%s.poll(%s)) {$yield(%s, true);}\n' % (
+                s += '%s.reset();' % fu_name
+                s += 'while (%s.poll(%s) != Poll::Ready) {$yield(%s, true);}\n' % (
                     fu_name, ret_name, ret_name)
                 return s + '(' + self.expr_l.to_cpp() + ') = ' + ret_name
             else:

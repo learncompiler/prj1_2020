@@ -88,6 +88,7 @@ void block_on(Future<T> fu) {
     T ret;
     Poll state = Poll::PendingAndDontSleep;
     while (state != Poll::Ready) {
+        cout << "polling" << endl;
         state = fu.poll(ret);
     }
 }
