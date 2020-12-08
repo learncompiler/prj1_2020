@@ -6,6 +6,8 @@
 template <class T>
 class Executor;
 
+enum Poll { Ready, PendingAndSleep, PendingAndDontSleep };
+
 template <class T>
 class _generator {
    private:
@@ -17,7 +19,7 @@ class _generator {
    public:
     _generator() : _line(0), executor(nullptr) {}
 
-    virtual bool next(T& V) = 0;
+    virtual Poll next(T& V) = 0;
 
     Executor<T>* get_executor() { return executor; }
 
@@ -30,29 +32,32 @@ class _generator {
 
 #define $emit(T)         \
    public:               \
-    bool next(T& _rv) {  \
+    Poll next(T& _rv) {  \
         switch (_line) { \
             case 0:;
 
-#define $stop     \
-    }             \
-    _line = 0;    \
-    return false; \
+#define $stop           \
+    }                   \
+    _line = 0;          \
+    return Poll::Ready; \
     }
 
-#define $return(V)            \
-    {                         \
-        case __LINE__:        \
-            _line = __LINE__; \
-            _rv = (V);        \
-            return false;     \
+#define $return(V)              \
+    {                           \
+        case __LINE__:          \
+            _line = __LINE__;   \
+            _rv = (V);          \
+            return Poll::Ready; \
     }
 
-#define $yield(V)         \
-    {                     \
-        _line = __LINE__; \
-        _rv = (V);        \
-        return true;      \
-        case __LINE__:;   \
+#define $yield(V, sleep)                      \
+    {                                         \
+        _line = __LINE__;                     \
+        _rv = (V);                            \
+        if (sleep)                            \
+            return Poll::PendingAndSleep;     \
+        else                                  \
+            return Poll::PendingAndDontSleep; \
+        case __LINE__:;                       \
     }
 #endif

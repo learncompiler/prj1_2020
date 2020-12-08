@@ -29,7 +29,7 @@ class Task {
         }
     }
 
-    bool poll(T& V) { return fu.poll(V); }
+    Poll poll(T& V) { return fu.poll(V); }
 };
 
 template <class T>
@@ -65,8 +65,11 @@ class Executor {
                 continue;
             }
             T a;
-            if (current_task->poll(a)) {
-                current_task->set_sleep();
+            Poll ret = current_task->poll(a);
+            if (ret != Poll::Ready) {
+                if (ret == Poll::PendingAndSleep) {
+                    current_task->set_sleep();
+                }
                 tasks.push_back(current_task);
             } else {
                 if (log) {

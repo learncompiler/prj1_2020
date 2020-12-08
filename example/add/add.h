@@ -1,4 +1,11 @@
 async int add_1(int* a) {
+    yield 1;
+    yield 1;
+    yield 1;
+    yield 1;
+    yield 1;
+    yield 1;
+    yield 1;
     *a = *a + 1;
     return 0;
 }

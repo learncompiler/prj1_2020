@@ -147,7 +147,7 @@ class Node:
         if self.kind == NodeKind('RETURN'):
             return '$return (' + self.expr_r.to_cpp() + ')'
         if self.kind == NodeKind('YIELD'):
-            return '$yield (' + self.expr_r.to_cpp() + ')'
+            return '$yield (' + self.expr_r.to_cpp() + ', false)'
         if self.kind == NodeKind('BLOCK'):
             s = '{'
             for item in self.body:
@@ -191,9 +191,9 @@ class Node:
                                             gen.origin_args[i].name, arg.to_cpp())
 
                 s += 'get_executor()->spawn(%s);\n' % fu_name
-                s += '$yield(%s)\n;' % ret_name
+                s += '$yield(%s, true)\n;' % ret_name
                 # s += '%s.poll(%s);\n' % (fu_name, ret_name)
-                s += 'while (%s.poll(%s)) {$yield(%s);}\n' % (
+                s += 'while (%s.poll(%s)) {$yield(%s, true);}\n' % (
                     fu_name, ret_name, ret_name)
                 return s + '(' + self.expr_l.to_cpp() + ') = ' + ret_name
             else:

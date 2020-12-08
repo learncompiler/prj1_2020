@@ -9,7 +9,7 @@ class Future {
     _generator<T>* gen;
 
    public:
-    bool poll(T& a) { return gen->next(a); }
+    Poll poll(T& a) { return gen->next(a); }
 
     Future() {}
 
