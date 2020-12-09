@@ -194,7 +194,7 @@ class Node:
                 # s += '$yield(%s, true)\n;' % ret_name
                 # s += '%s.poll(%s);\n' % (fu_name, ret_name)
                 s += '%s.reset();' % fu_name
-                s += 'while (%s.poll(%s) != Poll::Ready) {$yield(%s, true);}\n' % (
+                s += 'while (%s.poll(%s) != Poll::Ready) {$yield(%s, false);}\n' % (
                     fu_name, ret_name, ret_name)
                 return s + '(' + self.expr_l.to_cpp() + ') = ' + ret_name
             else:
