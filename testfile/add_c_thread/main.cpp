@@ -35,7 +35,8 @@ int main() {
         threads[i].join();
     endTime = clock();  //计时结束
     printf("ret: %d\n", a);
-    cout << "thread: run time is "
-         << (double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    cout << "run time is "
+         << (double)(endTime - startTime) / CLOCKS_PER_SEC * 1000 << "ms"
+         << endl;
     return 0;
 }

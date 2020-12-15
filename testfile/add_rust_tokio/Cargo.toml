@@ -1,5 +1,5 @@
 [package]
-name = "add_rust_async"
+name = "add_rust_tokio"
 version = "0.1.0"
 authors = ["刘丰源 <liufy17@mails.tsinghua.edu.cn>"]
 edition = "2018"
