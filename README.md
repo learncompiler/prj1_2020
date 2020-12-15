@@ -1,6 +1,6 @@
 # prj1_2020
 
-在 c++ 中实现 generator 语法。
+在 c++ 中实现 async/await 语法。
 
 ## 运行方式 && 语法格式
 
@@ -24,3 +24,21 @@
 ### 2020-11-07
 
 https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-11-02.md
+
+## Else
+
+线程通信、协程通信，编译可知
+
+内核作为一个进程
+
+线程里单独放一个协程
+
+高延时低延时
+
+生产者消费者
+
+同一个线程里的多个协程放到不同 cpu
+
+spawn 线程
+
+统一线程、协程
