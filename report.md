@@ -434,3 +434,49 @@ yield 后该协程会被休眠，并且将 fu 作为顶层 future 加入（spawn
 将所有 future 都放在顶层可以避免前面提到的多次调用，从而提升性能。
 
 ## 性能测试
+
+使用不同语言（Rust、C++），对相同语义的内容（创建多个协程/线程进行反复切换）进行重写。
+
+性能测试文件和运行结果如下：
+
+- async in c++ by _**xiaoyuan**_ (example/add)
+
+```
+root@6a0c649266c4:/mnt/example# ./run.sh add
+ret: 27261
+run time is 124.56ms
+```
+
+- thread in c++ by _**pthread**_ (testfile/add_c_thread)
+
+```
+root@6a0c649266c4:/mnt/testfile/add_c_thread# ./run.sh
+ret: 27261
+run time is 720.143s
+```
+
+- async in Rust by _**async_std**_ (testfile/add_rust_async_std)
+
+```
+root@6a0c649266c4:/mnt/testfile/add_rust_async_std# ./run.sh
+    Finished dev [unoptimized + debuginfo] target(s) in 0.08s
+Mutex {
+    data: 27261,
+}
+It took 176 ms
+```
+
+- async in Rust by _**tokio**_ (testfile/tokio)
+
+```
+root@6a0c649266c4:/mnt/testfile/add_rust_tokio# ./run.sh
+    Finished dev [unoptimized + debuginfo] target(s) in 0.08s
+Mutex {
+    data: 27261,
+}
+It took 352 ms
+```
+
+以上测试均通过 `taskset -c 0` 设置为单核运行，可以看出本项目的性能相比于 Rust async 和 c++ thread ，有较大的性能优势。
+
+测试文件并没有进行过深的 await 调用，深度越深，性能差距会越大。
