@@ -19,6 +19,28 @@
 1. cpp generator 内存优化。
 2. 补 log 。
 
+## 阅读列表
+
+### Rust
+
+- 笔记：https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-10-23.md
+  - https://github.com/rustcc/writing-an-os-in-rust/blob/master/12-async-await.md
+  - https://tmandry.gitlab.io/blog/posts/optimizing-await-1/
+- 笔记:https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-10-24.md
+  - https://tmandry.gitlab.io/blog/posts/optimizing-await-2/
+- 笔记：https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-11-02.md
+
+### C++
+
+- 笔记：https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-12-22.md
+  - https://lewissbaker.github.io/2017/11/17/understanding-operator-co-await
+  - https://kirit.com/How%20C%2B%2B%20coroutines%20work/Awaiting
+
+### Python
+
+- 笔记：https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-12-22.md
+  - dzy
+
 ## Log
 
 ### 2020-11-07
