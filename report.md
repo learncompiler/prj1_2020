@@ -4,7 +4,7 @@
 
 ## 背景介绍
 
-Rust 已经开始支持语言级别的异步协程，C++ 语言则不支持。
+Rust 已经开始支持语言级别的异步协程，C++ 语言（C++20 之前）则不支持。
 
 - [Rust 异步入门](https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-10-16/SUMMARY.md)
 
@@ -13,6 +13,10 @@ Rust 已经开始支持语言级别的异步协程，C++ 语言则不支持。
 Rust 异步最关键的 crate 是 Future 。尽管在 C++ 中也有类似的头文件和协程支持，但是无论是功能还是性能，都远不如 Rust 。
 
 本项目基于 minidecaf(简化的 C 语言) ，在 C++ 中增加了迭代器（generator）、异步（async、await）语法，并实现了 Future 和 Executor 作为运行时。
+
+## C++、Python 异步分析
+
+https://github.com/xy-plus/StudyDiary/blob/master/diary/2020-12-22.md
 
 ## Rust 异步分析
 
@@ -51,20 +55,19 @@ await 在 async function 中使用，作用为：等待指定的异步函数执�
 
 那么这和直接调用常规的同步函数的区别是什么？
 
-如果直接调用同步函数，那么就会直接跳转执行，**执行结束** 后才会回到上一层函数（调用者）。然而异步函数不一样，如果遇到资源不足等问题（比如在等待网络、IO 等），会返回 `Poll::Pending` 给调用者。然而，之前的异步函数并没有执行完，却提前返回了。这么做的目的是为了能把自己占用的 CPU 资源先让给别人，而自己开始等待所需资源。
+如果直接调用同步函数，那么就会直接跳转执行，**执行结束** 后才会回到上一层函数（调用者）。然而异步函数不一样，如果遇到资源不足等问题（比如在等待网络、IO 等），可以提前返回 `Poll::Pending` 给调用者。这么做的目的是为了能把自己占用的 CPU 资源先让给别人，而自己开始等待所需资源。
 
-那么 await 是如何等待异步函数执行完毕的呢？`expr.await` 也是一个语法糖，其展开如下（简化后的伪代码）（TODO：源代码链接）：
+那么 await 是如何等待异步函数执行完毕的呢？以 `let a = my_async_func().await` 为例，展开如下（简化后的伪代码）：
 
 ```Rust
-{
-    let future = expr;
+let a = {
+    let future = my_async_func();
     loop {
         ret = future.poll()
         match ret {
             Polll::Read<T> => { break; }
             Poll::Pending => { yield; }
         }
-
     }
     ret.unwrap();
 }
@@ -72,13 +75,13 @@ await 在 async function 中使用，作用为：等待指定的异步函数执�
 
 ### yield
 
-前面我们遇到了一个新的语法：yield。yield 的作用是主动暂时让出 CPU 资源。但是其本质和 return 是一样的，协程在主动 yield 的时候，会 return Poll::Pending 。区别在于，Future(async function) 通过 yield 返回时，会保存当前的执行状态，下次再进入该 Future 时，会从上次保存的状态继续执行；而常规的函数则会清空调用栈，下次执行还是从头开始执行。
+前面我们遇到了一个新的语法：yield。yield 的作用是主动暂时让出 CPU 资源。yield 和 return 本质上是同一个东西，协程在主动 yield 的时候，会 return Poll::Pending 。区别在于，Future(async function) 通过 yield 返回时，会保存当前的执行状态，下次再进入该 Future 时，会从上次保存的状态继续执行；而常规的函数则会清空调用栈，下次执行还是从头开始执行。
 
-如果在 generator 中进行 yield 则会保存当前 generator 的状态并返回。那么在 async function 中展开 await ，也有 yield 。那为什么在 async function 中也可以用 yield 呢？首先，async funtion 的返回值是 Future 。执行 future.await 才能得到 async funtion 的执行结果。在 Rust 中，async function 和 generator 本质上是一样的，[有函数](https://doc.rust-lang.org/src/core/future/mod.rs.html#61) 可以将 generator 转换成 Future 。
+如果在 generator 中进行 yield 则会保存当前 generator 的状态并返回。那么在 async function 中展开 await ，也有 yield 。那么 generator 和 async function 有什么关系呢？在 Rust 中，async function 和 generator 本质上是一样的，[有函数](https://doc.rust-lang.org/src/core/future/mod.rs.html#61) 可以将 generator 转换成 Future 。async funtion 的返回值是 Future 。执行 future.await 才能得到 async funtion 的执行结果。
 
-generator 怎么使用呢？一般来说，得代码不断执行 `gen.next()` 。同理，Future 也得有代码执行，这部分代码我们称为 executor（调度器）（后续介绍）。
+generator 怎么使用呢？一般来说，需要编写代码不断执行 `gen.next()` 。同理，Future 也得有代码执行，这部分代码我们称为 executor（调度器）（后续介绍）。
 
-注意，编写程序的程序员并不能在 async function 中直接使用 yield ，但是 tokio、async_std 提供了 `yield_now()` 函数，效果和 yield 相同，并且会将该协程放到 executor 的就绪队列队尾，等待下一次执行。
+注意，编写程序的程序员并不能在 async function 中直接使用 yield ，但是 tokio、async_std 提供了 `yield_now()` 函数，效果和 yield 相同，同时该协程会进入 executor 的就绪队列队尾，等待下一次执行。
 
 [tokio 中 yield_now 的实现](https://docs.rs/tokio/0.3.5/src/tokio/task/yield_now.rs.html#16-37) 如下：
 
