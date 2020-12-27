@@ -171,7 +171,7 @@ executor 从顶层结点 A 开始执行，逐渐执行完全部的子结点。
 
 如果只有 block_on ，那确实还不如同步函数。但是顶层 Future 可能不止有一个比如 `join!`（tokio、async_std 里都有）（用法举例：`join!(A(), D())`），可以让 executor 拥有两个顶层 Future（通过别的方法可以拥有多个顶层 Future）。如果一个下层 Future C 对上层 Future B 返回了 Pending ，则 Future B 会向它的上层 Future A 也返回 Pending 。如果顶层 Future A 向 executor 返回 Pending ，则会开始执行其它顶层 Future D3 。
 
-由于 executor 可以由我们（用户）自行编写，所以当 executor 收到 Pending 时的行为可以自行定义。目前 tokio 和 async_std 的做法都是将该 Future 移动到队尾。但是如果是自行实现的话，其实可以将该 Future 移出就绪队列，放到休眠队列中。知道该 Future 等待的资源就绪时，再将该 Future 唤醒。基于这一点，就可以理解为什么 `future.poll(self.waker)` 需要传入自己的 waker 了，就是为了能够让自己等待的 future 能够在就绪后唤醒自己。
+由于 executor 可以由我们（用户）自行编写，所以当 executor 收到 Pending 时的行为可以自行定义。目前 tokio 和 async_std 的做法都是将该 Future 移动到队尾。但是如果是自行实现的话，其实可以将该 Future 移出就绪队列，放到休眠队列中。直到该 Future 等待的资源就绪时，再将该 Future 唤醒。基于这一点，就可以理解为什么 `future.poll(self.waker)` 需要传入自己的 waker 了，就是为了能够让自己等待的 future 能够在就绪后唤醒自己。
 
 ## 实现过程
 
@@ -424,7 +424,7 @@ void run(bool log) {
 Future fu;
 int tmp;
 - while (fu.poll(tmp) != Poll::Ready) { yield tmp; }
-+ this->get_executor()->spawn(fn)
++ this->get_executor()->spawn(fu)
 + yield 0;
 + fu.poll(tmp);
 a = tmp;
@@ -455,7 +455,7 @@ run time is 124.56ms
 ```
 root@6a0c649266c4:/mnt/testfile/add_c_thread# ./run.sh
 ret: 27261
-run time is 720.143s
+run time is 720.143ms
 ```
 
 - async in Rust by _**async_std**_ (testfile/add_rust_async_std)
